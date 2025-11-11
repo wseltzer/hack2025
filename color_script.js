@@ -10,7 +10,8 @@ let video, canvas, ctx, output, toggleButton, resolutionInput, applyButton;
 // --- State Management ---
 let isPaused = false; 
 let frameCounter = 0; 
-const FADE_RATE = 10; 
+// INCREASED FADE_RATE for wider, longer stripes/tails
+const FADE_RATE = 25; 
 
 // --- Helper Functions ---
 
@@ -33,7 +34,7 @@ function frameToAscii() {
     const imageData = ctx.getImageData(0, 0, currentWidth, currentHeight); 
     const data = imageData.data;
 
-    let htmlOutput = ''; // Now building HTML string instead of plain text
+    let htmlOutput = ''; // Now building HTML string for colored spans
     
     for (let i = 0; i < data.length; i += 4) {
         // Get original color values
@@ -44,24 +45,24 @@ function frameToAscii() {
         // Calculate original brightness
         let avg = (r + g + b) / 3;
         
-        // --- MATRIX EFFECT LOGIC (Vertical Cascade) ---
+        // --- MATRIX EFFECT LOGIC (Falling Vertical Cascade) ---
         const pixelIndex = i / 4; 
         const rowIndex = Math.floor(pixelIndex / currentWidth);
         
-        // Falling effect (use subtraction)
-        // Ensure result is positive with the large offset
+        // Flicker calculation: Row-based timing (for verticality) - frame count (for falling)
+        // FADE_RATE = 25 gives wider stripes. We use a large number to ensure a positive modulo result.
         const flickerSeed = (1000000 + (rowIndex * FADE_RATE) - frameCounter + Math.floor(Math.random() * FADE_RATE)) % 100;
-
-        // Apply dimming factor based on the flickerSeed
+        
+        // Determine the dimming factor
         let dimmingFactor = 1.0; 
         if (Math.random() > 0.95) { 
              dimmingFactor = 1.0; // Head of trail (full brightness)
         } else {
-             // Tail of trail (dampened brightness)
+             // Tail of trail (dampened brightness based on position in the fade cycle)
              dimmingFactor = (flickerSeed / 100) * 0.8 + 0.2; 
         }
 
-        // Apply dimming factor to brightness (to select the character)
+        // Apply dimming factor to brightness (to select the character density)
         let dimmedAvg = avg * dimmingFactor;
         
         // Apply dimming factor to color (to make the color fade)
@@ -71,10 +72,10 @@ function frameToAscii() {
         
         // --- END MATRIX EFFECT LOGIC ---
 
-        // Map dimmed brightness to character
+        // Map dimmed brightness to character density
         const char = toAscii(dimmedAvg);
 
-        // 4. Build the HTML span element with inline color style
+        // Build the HTML span element with inline color style
         htmlOutput += `<span class="char" style="color: rgb(${finalR}, ${finalG}, ${finalB})">${char}</span>`;
 
         if ((i / 4 + 1) % currentWidth === 0) {
@@ -82,7 +83,7 @@ function frameToAscii() {
         }
     }
 
-    // 5. Update the display element with the HTML content
+    // Update the display element with the HTML content (color spans)
     output.innerHTML = htmlOutput;
 
     requestAnimationFrame(frameToAscii);
