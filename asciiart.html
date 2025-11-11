@@ -10,7 +10,13 @@
     <video id="video" width="160" height="120" autoplay muted style="display:none;"></video>
 
     <canvas id="canvas" width="160" height="120" style="display:none;"></canvas>
-
+<div id="controls">
+        <label for="resolution-input">ASCII Width (px):</label>
+        <input type="number" id="resolution-input" value="160" min="40" max="320">
+        <button id="apply-resolution-button">Apply Resolution</button>
+    </div>
+    
+    <pre id="ascii-output"></pre>
     <pre id="ascii-output"></pre>
 <button id="toggle-button">Pause</button>
 
