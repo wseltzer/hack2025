@@ -1,0 +1,52 @@
+body {
+    background-color: #000; 
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #0c0;
+    margin-bottom: 20px;
+    text-shadow: 0 0 5px #0f0; 
+}
+
+button, input[type="number"] {
+    padding: 5px 10px;
+    margin: 0 5px;
+    border: 1px solid #0f0;
+    background-color: #0a01;
+    color: #0f0;
+    font-family: 'Consolas', monospace;
+}
+
+/* CRITICAL STYLING FOR ASCII OUTPUT CONTAINER */
+#ascii-output {
+    /* CRITICAL: Use a fixed-width font */
+    font-family: 'Consolas', 'Courier New', monospace; 
+    
+    /* Set text flow properties */
+    white-space: pre-wrap; /* Allows the content to wrap, but preserves inner white space */
+    line-height: 0.9; 
+    margin: 0;
+    padding: 10px;
+    border: 1px solid #050;
+    background-color: #000;
+    
+    /* Font size must be set dynamically by JavaScript */
+    font-size: 5px;
+    
+    /* Ensure no spaces between lines */
+    display: block; 
+}
+
+/* Style for the individual characters (<span>) */
+.char {
+    display: inline-block;
+    /* Remove any default margin/padding that might break alignment */
+    margin: 0;
+    padding: 0;
+}
