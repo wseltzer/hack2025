@@ -1,8 +1,12 @@
 // --- Configuration Variables ---
-// Note: The CANVAS_WIDTH and CANVAS_HEIGHT must match the dimensions in the HTML
-const CANVAS_WIDTH = 160;
-const CANVAS_HEIGHT = 120;
-// Longer, more detailed character set (darkest/most dense to lightest/least dense)
+// We use a fixed aspect ratio (4:3) to calculate height based on user's width input
+const ASPECT_RATIO = 4 / 3; 
+
+// Initial dimensions (matching HTML default input value of 160)
+let currentWidth = 160;
+let currentHeight = Math.floor(currentWidth / ASPECT_RATIO); 
+
+// Character set ordered from darkest/most dense (beginning) to lightest/least dense (end)
 const ASCII_CHARS = '@&$#BWM80Q%OCJUXLIYTV1FPASZ/?cxyrjuvxznli()<>1{}*+=-~^":,. '; 
 
 // --- DOM Element References ---
@@ -11,6 +15,8 @@ const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d', { willReadFrequently: true });
 const output = document.getElementById('ascii-output');
 const toggleButton = document.getElementById('toggle-button'); 
+const resolutionInput = document.getElementById('resolution-input'); 
+const applyButton = document.getElementById('apply-resolution-button');
 
 // --- State Management ---
 let isPaused = false; // Tracks the pause state
@@ -27,7 +33,8 @@ function toAscii(g) {
 }
 
 /**
- * Converts a video frame into an ASCII string. This function runs in a loop.
+ * Converts a video frame into an ASCII string. This function runs in a continuous loop 
+ * via requestAnimationFrame as long as isPaused is false.
  */
 function frameToAscii() {
     if (isPaused) {
@@ -35,12 +42,11 @@ function frameToAscii() {
         return;
     }
 
-    // 1. Draw the current video frame onto the hidden canvas
-    // Since video.play() is running, this gets the current frame.
-    ctx.drawImage(video, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    // 1. Draw the current video frame onto the hidden canvas using current dynamic size
+    ctx.drawImage(video, 0, 0, currentWidth, currentHeight); 
 
     // 2. Get the raw pixel data
-    const imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const imageData = ctx.getImageData(0, 0, currentWidth, currentHeight); 
     const data = imageData.data;
 
     let asciiString = '';
@@ -58,7 +64,7 @@ function frameToAscii() {
         asciiString += toAscii(avg);
 
         // Add a newline character at the end of each row
-        if ((i / 4 + 1) % CANVAS_WIDTH === 0) {
+        if ((i / 4 + 1) % currentWidth === 0) {
             asciiString += '\n';
         }
     }
@@ -66,12 +72,11 @@ function frameToAscii() {
     // 4. Update the display element
     output.textContent = asciiString;
 
-    // 5. Loop: Request the next frame only if not paused.
-    // This is the correct way to keep the animation running continuously.
+    // 5. Loop: Request the next frame.
     requestAnimationFrame(frameToAscii);
 }
 
-// --- New Toggle Function ---
+// --- Toggle Function ---
 
 /**
  * Toggles the video and the ASCII processing loop on and off.
@@ -92,34 +97,3 @@ function togglePause() {
         frameToAscii(); 
     }
 }
-
-// --- Initialization ---
-
-/**
- * Initializes the video stream and starts the processing loop.
- */
-function initVideo() {
-    // Attach the toggle function to the button click event
-    toggleButton.addEventListener('click', togglePause); 
-
-    // Request access to the user's media devices (camera)
-    navigator.mediaDevices.getUserMedia({ video: { width: CANVAS_WIDTH, height: CANVAS_HEIGHT } })
-        .then(stream => {
-            // Attach the stream to the hidden video element
-            video.srcObject = stream;
-            
-            // When the video starts playing, begin the frame processing
-            video.onloadedmetadata = () => {
-                video.play();
-                // Start the loop initially
-                frameToAscii(); 
-            };
-        })
-        .catch(err => {
-            console.error("Error accessing video stream: ", err);
-            output.textContent = "Error: Could not access your camera. Please check permissions.";
-        });
-}
-
-// Start the application
-initVideo();
