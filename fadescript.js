@@ -38,6 +38,10 @@ function toAscii(g) {
 /**
  * Converts a video frame into an ASCII string with a Matrix-like flicker effect.
  */
+/**
+ * Converts a video frame into an ASCII string with a Matrix-like flicker effect, 
+ * simulating vertical rain.
+ */
 function frameToAscii() {
     if (isPaused) {
         return;
@@ -62,23 +66,31 @@ function frameToAscii() {
         // Calculate the average brightness (grayscale conversion)
         let avg = (r + g + b) / 3;
         
-        // --- MATRIX EFFECT LOGIC ---
+        // --- MATRIX EFFECT LOGIC (FIXED FOR VERTICAL CASCADE) ---
         
-        // Calculate the column index (x position)
-        const columnIndex = (i / 4) % currentWidth;
+        // Calculate the index of the current pixel (0 to total pixels - 1)
+        const pixelIndex = i / 4; 
         
-        // Combine column index and frame count for a looping, column-specific "flicker" value
-        const flickerSeed = (columnIndex * FADE_RATE + frameCounter) % 100; 
+        // 1. Calculate the ROW (Y position) and COLUMN (X position)
+        const rowIndex = Math.floor(pixelIndex / currentWidth);
+        const columnIndex = pixelIndex % currentWidth;
         
-        if (Math.random() > 0.9) { 
-             // 10% chance to be fully bright (the 'head' of the cascade)
-             // avg remains the same
+        // 2. Create a time-based flicker seed primarily controlled by the ROW.
+        // We add a slight offset based on the column (columnIndex) to make it look messy 
+        // and less uniform, simulating multiple concurrent rain trails.
+        const flickerSeed = (rowIndex * FADE_RATE + frameCounter + columnIndex) % 100; 
+        
+        // 3. Apply temporary dimming (The Fade/Trail)
+        if (Math.random() > 0.95) { 
+             // 5% chance to be fully bright (The "head" of the rain trail)
         } else {
-             // Dampen the brightness based on the flickerSeed to simulate the fade
+             // Dampen the brightness based on the flickerSeed.
+             // When flickerSeed is low (at the top/tail of the calculated cascade), avg is reduced.
+             // When flickerSeed is high (in the middle/body), avg is higher.
              avg *= (flickerSeed / 100) * 0.8 + 0.2; 
         }
         
-        // Map the (potentially dimmed) brightness to ASCII character
+        // 4. Map the (potentially dimmed) brightness to ASCII character
         asciiString += toAscii(avg);
         // --- END MATRIX EFFECT LOGIC ---
 
