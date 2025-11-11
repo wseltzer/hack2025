@@ -21,8 +21,8 @@ const applyButton = document.getElementById('apply-resolution-button');
 
 // --- State Management ---
 let isPaused = false; 
-let frameCounter = 0; // NEW: Used for the Matrix effect timing
-const FADE_RATE = 10; // NEW: Controls the speed/timing of the cascade (lower is faster)
+let frameCounter = 0; // Used for the Matrix effect timing
+const FADE_RATE = 10; // Controls the speed/timing of the cascade (lower is faster)
 
 // --- Helper Functions ---
 
@@ -75,7 +75,6 @@ function frameToAscii() {
              // avg remains the same
         } else {
              // Dampen the brightness based on the flickerSeed to simulate the fade
-             // The multiplier ensures the brightness is reduced, simulating fade
              avg *= (flickerSeed / 100) * 0.8 + 0.2; 
         }
         
@@ -100,4 +99,92 @@ function frameToAscii() {
 /**
  * Toggles the video and the ASCII processing loop on and off.
  */
-function togglePause
+function togglePause() {
+    isPaused = !isPaused; 
+
+    if (isPaused) {
+        video.pause();
+        toggleButton.textContent = 'Play';
+        
+    } else {
+        video.play();
+        toggleButton.textContent = 'Pause';
+        frameToAscii(); // Restart the requestAnimationFrame loop
+    }
+}
+
+// --- Resolution Function ---
+
+/**
+ * Reads the input field, updates the global width/height, and prepares elements.
+ */
+function changeResolution() {
+    const newWidth = parseInt(resolutionInput.value);
+    
+    if (isNaN(newWidth) || newWidth <= 0) {
+        alert("Please enter a valid resolution width.");
+        return;
+    }
+
+    const newHeight = Math.floor(newWidth / ASPECT_RATIO);
+
+    // Update global state
+    currentWidth = newWidth;
+    currentHeight = newHeight;
+
+    // Update element attributes
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    video.width = newWidth;
+    video.height = newHeight;
+
+    // Update the font size for the output for better viewing
+    const fontSize = Math.max(3, 10 - Math.floor(newWidth / 50));
+    output.style.fontSize = `${fontSize}px`;
+    
+    // Ensure the loop is running and restarts with new dimensions
+    if (isPaused) {
+        isPaused = false;
+        toggleButton.textContent = 'Pause';
+        video.play();
+    }
+    frameToAscii(); 
+}
+
+// --- Initialization ---
+
+/**
+ * Initializes the video stream and starts the processing loop.
+ */
+function initVideo() {
+    // Attach event listeners, adding checks to prevent runtime errors if elements are missing
+    if (toggleButton) toggleButton.addEventListener('click', togglePause); 
+    if (applyButton) applyButton.addEventListener('click', changeResolution); 
+
+    // 1. Ensure initial canvas/video sizes are set
+    canvas.width = currentWidth;
+    canvas.height = currentHeight;
+    video.width = currentWidth;
+    video.height = currentHeight;
+
+    // 2. Request access to the user's media devices (camera)
+    navigator.mediaDevices.getUserMedia({ video: { width: currentWidth, height: currentHeight } })
+        .then(stream => {
+            video.srcObject = stream;
+            
+            // 3. CRITICAL: Wait for video metadata to load before playing and starting the loop
+            video.onloadedmetadata = () => {
+                video.play();
+                // Start the loop initially
+                frameToAscii(); 
+            };
+        })
+        .catch(err => {
+            // Display error message directly in the output area
+            console.error("Error accessing video stream: ", err);
+            output.textContent = "Error: Could not access your camera. Please check permissions.";
+        });
+}
+
+// Start the application
+initVideo();
