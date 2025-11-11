@@ -1,0 +1,59 @@
+body {
+    /* Matrix-style dark background */
+    background-color: #000; 
+    color: #0f0; /* Matrix green text */
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #0c0;
+    margin-bottom: 20px;
+    /* Add a subtle text shadow for a glow effect */
+    text-shadow: 0 0 5px #0f0; 
+}
+
+/* Style for controls */
+#controls {
+    margin-bottom: 15px;
+    color: #0f0;
+}
+
+button, input[type="number"] {
+    padding: 5px 10px;
+    margin: 0 5px;
+    border: 1px solid #0f0;
+    background-color: #0a01; /* Semi-transparent background */
+    color: #0f0;
+    font-family: 'Consolas', monospace;
+}
+
+hr {
+    width: 80%;
+    border-color: #050;
+    margin: 15px 0;
+}
+
+/* CRITICAL STYLING FOR ASCII OUTPUT */
+#ascii-output {
+    /* CRITICAL: Use a fixed-width font for perfect character alignment */
+    font-family: 'Consolas', 'Courier New', monospace; 
+    
+    /* Font size is dynamically set by JavaScript, but this is a reasonable default */
+    font-size: 5px; 
+    
+    /* CRITICAL: Reduce line height to eliminate vertical gaps between characters */
+    line-height: 0.9; 
+    
+    /* ESSENTIAL: Preserve whitespace and layout */
+    white-space: pre; 
+    
+    margin: 0;
+    padding: 10px;
+    border: 1px solid #050;
+    background-color: #000;
+}
