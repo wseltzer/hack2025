@@ -11,7 +11,7 @@ let video, canvas, ctx, output, toggleButton, resolutionInput, applyButton;
 let isPaused = false; 
 let frameCounter = 0; 
 // INCREASED FADE_RATE for wider, longer stripes/tails
-const FADE_RATE = 25; 
+const FADE_RATE = 50; 
 
 // --- Helper Functions ---
 
