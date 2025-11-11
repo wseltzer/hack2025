@@ -1,0 +1,27 @@
+body {
+    background-color: #111;
+    color: #0f0; /* Green text for a classic terminal look */
+    font-family: 'Consolas', 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    color: #0ff;
+    margin-bottom: 20px;
+}
+
+#ascii-output {
+    /* Critical: Use a fixed-width font */
+    font-family: inherit; 
+    font-size: 5px; /* Smaller font for better detail density */
+    line-height: 0.9; /* Reduce line height to remove vertical gaps */
+    white-space: pre; /* Essential for preserving whitespace/layout */
+    margin: 0;
+    padding: 0;
+    border: 1px solid #333;
+    background-color: #000;
+}
