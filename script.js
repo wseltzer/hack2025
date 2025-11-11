@@ -3,7 +3,9 @@
 const CANVAS_WIDTH = 160;
 const CANVAS_HEIGHT = 120;
 // A string of characters ordered from darkest (denser) to lightest (sparser)
-const ASCII_CHARS = '@%#*+=-:. ';
+// const ASCII_CHARS = '@%#*+=-:. ';
+// Old set: '@%#*+=-:. '
+const ASCII_CHARS = '@&$#BWM80Q%OCJUXLIYTV1FPASZ/?cxyrjuvxznli()<>1{}*+=-~^":,. ';
 
 // --- DOM Element References ---
 const video = document.getElementById('video');
