@@ -22,7 +22,55 @@ function toAscii(g) {
 /**
  * The core loop for video processing and Matrix effect rendering.
  */
+/**
+ * The core loop for video processing and Matrix effect rendering, 
+ * now correctly simulating falling rain.
+ */
 function frameToAscii() {
+    if (isPaused || video.paused) {
+        return;
+    }
+    
+    frameCounter++;
+
+    // 1. Draw the current video frame onto the hidden canvas
+    ctx.drawImage(video, 0, 0, currentWidth, currentHeight); 
+    const imageData = ctx.getImageData(0, 0, currentWidth, currentHeight); 
+    const data = imageData.data;
+
+    let asciiString = '';
+    
+    for (let i = 0; i < data.length; i += 4) {
+        let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        
+        // --- MATRIX EFFECT LOGIC (Vertical Cascade) ---
+        const pixelIndex = i / 4; 
+        const rowIndex = Math.floor(pixelIndex / currentWidth);
+        
+        // The fix: Subtract frameCounter to make the effect move DOWN the screen.
+        // We use a large number (e.g., 1000000) inside the modulo to ensure the result is positive, 
+        // as JavaScript's % operator can return negative values.
+        const flickerSeed = (1000000 + (rowIndex * FADE_RATE) - frameCounter + Math.floor(Math.random() * FADE_RATE)) % 100;
+        
+        if (Math.random() > 0.95) { 
+             // 5% chance for "head" of the rain trail
+        } else {
+             // Dampen brightness for the "tail" effect
+             avg *= (flickerSeed / 100) * 0.8 + 0.2; 
+        }
+        
+        asciiString += toAscii(avg);
+
+        if ((i / 4 + 1) % currentWidth === 0) {
+            asciiString += '\n';
+        }
+    }
+
+    output.textContent = asciiString;
+    requestAnimationFrame(frameToAscii);
+}
+
+function notframeToAscii() {
     if (isPaused || video.paused) {
         return;
     }
