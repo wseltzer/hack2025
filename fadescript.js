@@ -1,50 +1,32 @@
 // --- Configuration Variables ---
-// We use a fixed aspect ratio (4:3) to calculate height based on user's width input
 const ASPECT_RATIO = 4 / 3; 
-
-// Initial dimensions (matching HTML default input value of 160)
 let currentWidth = 160;
 let currentHeight = Math.floor(currentWidth / ASPECT_RATIO); 
-
-// Character set ordered from darkest/most dense (beginning) to lightest/least dense (end)
 const ASCII_CHARS = '@&$#BWM80Q%OCJUXLIYTV1FPASZ/?cxyrjuvxznli()<>1{}*+=-~^":,. '; 
 
-// --- DOM Element References ---
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-// Set { willReadFrequently: true } for better performance
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const output = document.getElementById('ascii-output');
-const toggleButton = document.getElementById('toggle-button'); 
-const resolutionInput = document.getElementById('resolution-input'); 
-const applyButton = document.getElementById('apply-resolution-button');
+// --- Global DOM Element Variables (Will be set after DOMContentLoaded) ---
+let video, canvas, ctx, output, toggleButton, resolutionInput, applyButton;
 
 // --- State Management ---
 let isPaused = false; 
-let frameCounter = 0; // Used for the Matrix effect timing
-const FADE_RATE = 10; // Controls the speed/timing of the cascade (lower is faster)
+let frameCounter = 0; 
+const FADE_RATE = 10; 
 
 // --- Helper Functions ---
 
-/**
- * Maps a grayscale value (0-255) to an ASCII character.
- */
 function toAscii(g) {
     const index = Math.floor(g / 256 * ASCII_CHARS.length);
-    // Return the character, reversed for density mapping (dark areas = dense chars)
     return ASCII_CHARS[ASCII_CHARS.length - 1 - index];
 }
 
 /**
- * Converts a video frame into an ASCII string with a Matrix-like flicker effect, 
- * simulating STRICT vertical rain.
+ * The core loop for video processing and Matrix effect rendering.
  */
 function frameToAscii() {
-    if (isPaused) {
+    if (isPaused || video.paused) {
         return;
     }
     
-    // Increment the frame counter for the animation timing
     frameCounter++;
 
     // 1. Draw the current video frame onto the hidden canvas
@@ -54,29 +36,118 @@ function frameToAscii() {
 
     let asciiString = '';
     
-    // 3. Iterate over the pixels
     for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+        let avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
         
-        // Calculate the average brightness (grayscale conversion)
-        let avg = (r + g + b) / 3;
-        
-        // --- MATRIX EFFECT LOGIC (FIXED FOR STRICT VERTICAL CASCADE) ---
-        
+        // --- MATRIX EFFECT LOGIC (Vertical Cascade) ---
         const pixelIndex = i / 4; 
-        
-        // 1. Calculate the ROW (Y position)
         const rowIndex = Math.floor(pixelIndex / currentWidth);
         
-        // 2. Create a time-based flicker seed controlled ONLY by the ROW and FRAME COUNTER.
-        // We use Math.random() to add a slight offset, ensuring each column looks messy and independent.
+        // Flicker calculation: Row-based timing + frame count + random offset
         const flickerSeed = (rowIndex * FADE_RATE + frameCounter + Math.floor(Math.random() * FADE_RATE)) % 100;
         
-        // 3. Apply temporary dimming (The Fade/Trail)
         if (Math.random() > 0.95) { 
-             // 5% chance to be fully bright (The "head" of the rain trail)
+             // 5% chance for "head" of the rain trail
         } else {
-             // Dampen the brightness based on the flickerSeed.
-             avg *= (flickerSeed / 100)
+             // Dampen brightness for the "tail" effect
+             avg *= (flickerSeed / 100) * 0.8 + 0.2; 
+        }
+        
+        asciiString += toAscii(avg);
+
+        if ((i / 4 + 1) % currentWidth === 0) {
+            asciiString += '\n';
+        }
+    }
+
+    output.textContent = asciiString;
+    requestAnimationFrame(frameToAscii);
+}
+
+// --- Toggle Function (Pause/Play) ---
+
+function togglePause() {
+    isPaused = !isPaused; 
+
+    if (isPaused) {
+        video.pause();
+        toggleButton.textContent = 'Play';
+    } else {
+        video.play();
+        toggleButton.textContent = 'Pause';
+        frameToAscii(); // Restart the loop
+    }
+}
+
+// --- Resolution Function ---
+
+function changeResolution() {
+    const newWidth = parseInt(resolutionInput.value);
+    
+    if (isNaN(newWidth) || newWidth <= 0) {
+        alert("Please enter a valid resolution width.");
+        return;
+    }
+
+    currentWidth = newWidth;
+    currentHeight = Math.floor(newWidth / ASPECT_RATIO);
+
+    canvas.width = currentWidth;
+    canvas.height = currentHeight;
+    video.width = currentWidth;
+    video.height = currentHeight;
+
+    const fontSize = Math.max(3, 10 - Math.floor(newWidth / 50));
+    output.style.fontSize = `${fontSize}px`;
+    
+    // Restart logic
+    if (isPaused) {
+        isPaused = false;
+        toggleButton.textContent = 'Pause';
+        video.play();
+    }
+    frameToAscii(); 
+}
+
+// --- Initialization ---
+
+function initVideo() {
+    // 1. Set element references
+    video = document.getElementById('video');
+    canvas = document.getElementById('canvas');
+    ctx = canvas.getContext('2d', { willReadFrequently: true });
+    output = document.getElementById('ascii-output');
+    toggleButton = document.getElementById('toggle-button'); 
+    resolutionInput = document.getElementById('resolution-input'); 
+    applyButton = document.getElementById('apply-resolution-button');
+
+    // 2. Attach event listeners
+    if (toggleButton) toggleButton.addEventListener('click', togglePause); 
+    if (applyButton) applyButton.addEventListener('click', changeResolution); 
+
+    // 3. Set initial element sizes
+    canvas.width = currentWidth;
+    canvas.height = currentHeight;
+    video.width = currentWidth;
+    video.height = currentHeight;
+
+    // 4. Request camera access
+    navigator.mediaDevices.getUserMedia({ video: { width: currentWidth, height: currentHeight } })
+        .then(stream => {
+            video.srcObject = stream;
+            
+            // 5. Start the loop ONLY when the video metadata is loaded
+            video.onloadedmetadata = () => {
+                video.play();
+                frameToAscii(); 
+            };
+        })
+        .catch(err => {
+            // Log and display error if camera access fails
+            console.error("Fatal Error: Could not access video stream.", err);
+            output.textContent = "FATAL ERROR: Camera access denied or device unavailable. Please check permissions.";
+        });
+}
+
+// CRITICAL FIX: Ensure the entire script waits for the HTML DOM to be completely loaded.
+document.addEventListener('DOMContentLoaded', initVideo);
