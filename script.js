@@ -19,7 +19,7 @@ const resolutionInput = document.getElementById('resolution-input');
 const applyButton = document.getElementById('apply-resolution-button');
 
 // --- State Management ---
-let isPaused = false; // Tracks the pause state
+let isPaused = false; 
 
 // --- Helper Functions ---
 
@@ -27,52 +27,35 @@ let isPaused = false; // Tracks the pause state
  * Maps a grayscale value (0-255) to an ASCII character.
  */
 function toAscii(g) {
-    // Map grayscale value to an index, then reverse it for density mapping
     const index = Math.floor(g / 256 * ASCII_CHARS.length);
     return ASCII_CHARS[ASCII_CHARS.length - 1 - index];
 }
 
 /**
- * Converts a video frame into an ASCII string. This function runs in a continuous loop 
- * via requestAnimationFrame as long as isPaused is false.
+ * Converts a video frame into an ASCII string. This function runs in a continuous loop.
  */
 function frameToAscii() {
     if (isPaused) {
-        // If paused, just exit the function and don't request the next frame.
         return;
     }
 
-    // 1. Draw the current video frame onto the hidden canvas using current dynamic size
+    // Use current dynamic size for drawing and getting image data
     ctx.drawImage(video, 0, 0, currentWidth, currentHeight); 
-
-    // 2. Get the raw pixel data
     const imageData = ctx.getImageData(0, 0, currentWidth, currentHeight); 
     const data = imageData.data;
 
     let asciiString = '';
     
-    // 3. Iterate over the pixels
     for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        
-        // Calculate the average brightness (grayscale conversion)
-        const avg = (r + g + b) / 3;
-        
-        // Map brightness to ASCII character
+        const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
         asciiString += toAscii(avg);
 
-        // Add a newline character at the end of each row
         if ((i / 4 + 1) % currentWidth === 0) {
             asciiString += '\n';
         }
     }
 
-    // 4. Update the display element
     output.textContent = asciiString;
-
-    // 5. Loop: Request the next frame.
     requestAnimationFrame(frameToAscii);
 }
 
@@ -82,18 +65,90 @@ function frameToAscii() {
  * Toggles the video and the ASCII processing loop on and off.
  */
 function togglePause() {
-    isPaused = !isPaused; // Flip the state
+    isPaused = !isPaused; 
 
     if (isPaused) {
-        // PAUSE: Stop the video stream from updating frames
         video.pause();
         toggleButton.textContent = 'Play';
         
     } else {
-        // PLAY: Start the video stream and restart the processing loop
         video.play();
         toggleButton.textContent = 'Pause';
-        // Crucial: Call frameToAscii() once to restart the requestAnimationFrame loop
-        frameToAscii(); 
+        frameToAscii(); // Restart the requestAnimationFrame loop
     }
 }
+
+// --- Resolution Function ---
+
+/**
+ * Reads the input field, updates the global width/height, and prepares elements.
+ */
+function changeResolution() {
+    const newWidth = parseInt(resolutionInput.value);
+    
+    if (isNaN(newWidth) || newWidth <= 0) {
+        alert("Please enter a valid resolution width.");
+        return;
+    }
+
+    const newHeight = Math.floor(newWidth / ASPECT_RATIO);
+
+    // Update global state
+    currentWidth = newWidth;
+    currentHeight = newHeight;
+
+    // Update element attributes
+    canvas.width = newWidth;
+    canvas.height = newHeight;
+    video.width = newWidth;
+    video.height = newHeight;
+
+    // Update the font size for the output for better viewing
+    const fontSize = Math.max(3, 10 - Math.floor(newWidth / 50));
+    output.style.fontSize = `${fontSize}px`;
+    
+    // Ensure the loop is running and restarts with new dimensions
+    if (isPaused) {
+        isPaused = false;
+        toggleButton.textContent = 'Pause';
+        video.play();
+    }
+    frameToAscii(); 
+}
+
+// --- Initialization ---
+
+/**
+ * Initializes the video stream and starts the processing loop.
+ */
+function initVideo() {
+    // Attach event listeners
+    if (toggleButton) toggleButton.addEventListener('click', togglePause); 
+    if (applyButton) applyButton.addEventListener('click', changeResolution); 
+
+    // CRITICAL FIX: Set initial canvas/video sizes BEFORE requesting stream 
+    canvas.width = currentWidth;
+    canvas.height = currentHeight;
+    video.width = currentWidth;
+    video.height = currentHeight;
+
+    // Request access to the user's media devices (camera)
+    // IMPORTANT: Request stream with the dimensions matching the current state
+    navigator.mediaDevices.getUserMedia({ video: { width: currentWidth, height: currentHeight } })
+        .then(stream => {
+            video.srcObject = stream;
+            
+            video.onloadedmetadata = () => {
+                video.play();
+                // Start the loop initially
+                frameToAscii(); 
+            };
+        })
+        .catch(err => {
+            console.error("Error accessing video stream: ", err);
+            output.textContent = "Error: Could not access your camera. Please check permissions.";
+        });
+}
+
+// Start the application
+initVideo();
